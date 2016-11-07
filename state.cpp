@@ -10,7 +10,7 @@ state::state(parameters* param_)
 	
 	//blok położeń	
 	{
-		r=new vect[param->N];
+		r=new vect[param.N];
 		
 		double b[9];
 		
@@ -32,7 +32,7 @@ state::state(parameters* param_)
 		b[8]=*a*sqrt(2.0/3.0);
 
 		unsigned i=0;
-		vect mnoznik[3];
+		double mnoznik[3];
 		
 		double n=param->n;
 		for(int i0=0;i0<n;i0++)
@@ -51,14 +51,77 @@ state::state(parameters* param_)
 					mnoznik[2]/=2;
 
 					
-					rptr[i][0]=mnoznik[0]*b[0] + mnoznik[1]*b[1] + mnoznik[2]*b[2];
-					rptr[i][1]=mnoznik[0]*b[3] + mnoznik[1]*b[4] + mnoznik[2]*b[5];
-					rptr[i][2]=mnoznik[0]*b[6] + mnoznik[1]*b[7] + mnoznik[2]*b[8];
+					vect[i].x=mnoznik[0]*b[0] + mnoznik[1]*b[1] + mnoznik[2]*b[2];
+					vect[i].y=mnoznik[0]*b[3] + mnoznik[1]*b[4] + mnoznik[2]*b[5];
+					vect[i].z=mnoznik[0]*b[6] + mnoznik[1]*b[7] + mnoznik[2]*b[8];
 				}
 			}
 		}
 		
 	}
+	
+	//blok pędów
+	{
+		p=new vect[param.N];
+		
+		double tmp_rnd,tmp_Ekin,tmp_Ekin2=0;
+		double tmp_Pxyz[3]={0,0,0};
+		double tmp_P;
+		
+		for(unsigned ii=0;ii<param->N;ii++)
+		{
+			for(unsigned iii=0;iii<3;iii++)
+			{
+				tmp_rnd=((double)rand()/RAND_MAX);
+				if(tmp_rnd==0)
+					tmp_rnd=1;
+				
+				tmp_Ekin=-units->kB*param->T0*log(tmp_rnd);  	//nie podzielono Ekin przez 2, bo
+				tmp_Ekin2=tmp_Ekin;
+				
+				if(rand()%2)
+					tmp_P*=-1;
+				tmp->p[iii][ii]=tmp_P;
+				
+				tmp_Pxyz[iii]+=tmp_P;
+			}
+		}	
+		
+		
+		tmp_Pxyz[0]/=param->N;
+		tmp_Pxyz[1]/=param->N;
+		tmp_Pxyz[2]/=param->N;		
+		
+		//tmp->Etot=0;
+		for(unsigned ii=0;ii<param->N;ii++)
+		{
+			//free(Ekin[ii]);
+			for(unsigned xyz=0;xyz<3;xyz++)
+			{
+				tmp->p[xyz][ii]-=tmp_Pxyz[xyz];
+				//tmp->Etot+=tmp_Pxyz[xyz]*tmp_Pxyz[xyz];
+			}
+		}
+		//free(Ekin);
+		//tmp->Etot=sqrt(tmp->Etot);
+		tmp_Ekin=0;
+		for(unsigned ii=0;ii<param->N;ii++)
+		{
+			tmp_P=0;
+			for(unsigned xyz=0;xyz<3;xyz++)
+			{
+				tmp_P+=tmp->p[xyz][ii]*tmp->p[xyz][ii];
+			}
+			tmp_Ekin+=sqrt(tmp_P);		
+		}
+		tmp_Ekin/=param->m;
+		printf("2Ekin2 = %lf\n",tmp_Ekin2);
+		printf("2Ekin = %lf\n",tmp_Ekin);
+		printf("T(Ekin2) = %lf\n",tmp_Ekin2/(3*param->N*units->kB));
+		printf("T(Ekin) = %lf\n",tmp_Ekin/(3*param->N*units->kB));
+	}
+	
+	tmp->t=0;
 }
 
 state::~state()
